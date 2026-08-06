@@ -1,59 +1,68 @@
-[简体中文](#) | [English](./README.en.md) | [繁體中文](./README.zh-Hant.md) | [日本語](./README.ja.md) | [Русский](./README.ru.md)
+# 设计一致性审查
 
-# pro-api-sdk
+一款面向嘉立创 EDA 专业版的**设计一致性审查**扩展：一键检查原理图、PCB 与 BOM 的一致性，输出按严重程度分级的问题清单，并支持点击问题行直接跳转定位到对应器件，帮助工程师在交付、评审、打样前快速发现设计隐患。
 
-嘉立创EDA & EasyEDA 专业版扩展 API 开发工具
+- 开源协议：Apache-2.0
+- 适用版本：嘉立创 EDA 专业版（engines.eda ≥ 3.2.0）
+- 源码仓库：https://github.com/kong522/design-audit
 
-<a href="https://github.com/easyeda/pro-api-sdk" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/github/stars/easyeda/pro-api-sdk" alt="GitHub Repo Stars" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>&nbsp;<a href="https://github.com/easyeda/pro-api-sdk/issues" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/github/issues/easyeda/pro-api-sdk" alt="GitHub Issues" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>&nbsp;<a href="https://github.com/easyeda/pro-api-sdk" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/github/repo-size/easyeda/pro-api-sdk" alt="GitHub Repo Size" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>&nbsp;<a href="https://choosealicense.com/licenses/apache-2.0/" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/github/license/easyeda/pro-api-sdk" alt="GitHub License" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>&nbsp;<a href="https://www.npmjs.com/package/@jlceda/pro-api-types" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/npm/v/%40jlceda%2Fpro-api-types?label=pro-api-types" alt="NPM Version" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>&nbsp;<a href="https://www.npmjs.com/package/@jlceda/pro-api-types" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/npm/d18m/%40jlceda%2Fpro-api-types" alt="NPM Downloads" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>
+## 运行效果
 
-> [!NOTE]
->
-> 详细开发文档请访问：[https://prodocs.lceda.cn/cn/api/guide/](https://prodocs.lceda.cn/cn/api/guide/)
+![Design Audit 运行界面](./images/screenshot.png)
 
-## 进入开发
+在原理图 / PCB 页面顶部菜单点击 **Design Audit → Run Design Audit...**，即可打开审查面板：点击「开始检查」，分级问题清单按 严重 / 警告 / 提示 分组展示，点击任意问题行自动跳转定位到对应器件。
 
-本开发工具组包含了用于开发 [嘉立创EDA专业版](https://pro.lceda.cn/) 扩展包的所有环境和工具，并内置了 ESLint 的推荐规则。
+## 功能
 
-1. 克隆 [pro-api-sdk](https://github.com/easyeda/pro-api-sdk) 项目仓库到本地
+| 检查项 | 严重级别 | 说明 |
+|---|---|---|
+| 位号重复 | 🔴 严重 | 同一文档内出现重复位号（原理图 / PCB 分别检查） |
+| 封装缺失 | 🟡 警告 | 器件未声明 Footprint（原理图 / PCB 分别检查） |
+| 器件值缺失 | 🔵 提示 | 器件缺少 Value，BOM 中将显示为空 |
+| 封装不一致 | 🔴 严重 | 原理图声明的封装与 PCB 上实际放置的封装不一致 |
+| 位号缺失 | 🔵 提示 | 原理图位号在 PCB 中缺失（或反之，可能为机械件/测试点） |
 
-    Gitee:
+- **点击跳转**：点击任意问题行，自动选中并缩放定位到对应器件
+- **结果统计**：面板顶部按 严重 / 警告 / 提示 / 通过 汇总计数
+- **报告导出**：一键导出 CSV 报告或复制 JSON 报告，可直接附入评审单
+- **全离线运行**：所有检查均在本地完成，无任何网络请求
+- **双语界面**：根据系统语言自动切换 简体中文 / English
 
-    ```shell
-    git clone --depth=1 https://gitee.com/jlceda/pro-api-sdk.git
-    ```
+## 使用方法
 
-    GitHub:
+1. 在嘉立创 EDA 专业版中打开你的工程（建议同时打开**原理图**和**PCB**，以便执行交叉检查）
+2. 点击顶部菜单 **Design Audit → Run Design Audit...**（原理图 / PCB 页面下均有入口）
+3. 在弹出的审查面板中点击 **开始检查**
+4. 查看问题清单：红色 = 严重，黄色 = 警告，蓝色 = 提示
+5. 点击问题行即可跳转定位到对应器件
+6. 需要存档时，点击 **导出 CSV** 或 **复制报告**
 
-    ```shell
-    git clone --depth=1 https://github.com/easyeda/pro-api-sdk.git
-    ```
+> 提示：若只打开了原理图或 PCB 单侧文档，交叉检查（封装一致性、位号缺失）将自动跳过，面板会明确提示。
 
-2. 初始化开发环境（安装依赖）
+## 开发
 
-    ```shell
-    npm install
-    ```
+```bash
+npm install        # 安装依赖
+npm run build      # 构建扩展包（输出至 build/dist/*.eext）
+npm run lint       # 代码规范检查
+npx tsc --noEmit   # 类型检查
+```
 
-3. 进行些许变更 ...
+### 项目结构
 
-    - 修改文件夹名称为你的项目名称
-    - 参考 [开发指南](https://prodocs.lceda.cn/cn/api/guide/how-to-start.html#ii-%E6%89%A9%E5%B1%95%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6) 修改 `extension.json` 中的 `name`、`displayName`、`description`、`publisher` 字段
-    - 结合 [扩展 API 参考文档](https://prodocs.lceda.cn/cn/api/reference/pro-api.html) 编写你的代码
+```
+├── extension.json        # 扩展配置（菜单注册、元信息）
+├── src/index.ts          # 入口：打开审查面板 / 关于
+├── iframe/audit.html     # 审查面板 UI + 检查器逻辑（内联，直接访问 eda）
+└── locales/              # 多语言（zh-Hans / en）
+```
 
-> [!NOTE]
->
-> 推荐使用 AI 编程工具，结合官方 SKILL 加快开发进度。详情请查阅：[easyeda-api-skill](https://github.com/easyeda/easyeda-api-skill)
+### 调试
 
-4. 编译扩展包
+- 在编辑器 URL 添加 `cll=debug` 进入调试模式，连续按三次 `F12` 打开开发者工具
+- 面板内的日志以 `[Design Audit]` 前缀输出到控制台
+- 如扩展引发异常无法正常移除，可在 URL 添加 `safetyMode=true` 全局禁用扩展与脚本系统
 
-    ```shell
-    npm run build
-    ```
+## 原理
 
-5. 在 嘉立创EDA专业版 中安装生成在 `./build/dist/` 下的扩展包
-
-## 开源许可
-
-<a href="https://choosealicense.com/licenses/apache-2.0/" style="vertical-align: inherit;" target="_blank"><img src="https://img.shields.io/github/license/easyeda/pro-api-sdk" alt="GitHub License" class="not-medium-zoom-image" style="display: inline; vertical-align: inherit;" /></a>
-
-本开发工具组使用 [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/) 开源许可协议，你仅可以将 **嘉立创EDA**、**EasyEDA** 商标信息用于依托于本工具组开发的扩展包的 **功能描述部分** 和 **开源发布的标题部分**。
+扩展 API 全部运行于客户端本地：`eda.dmt_SelectControl.getCurrentDocumentInfo()` 获取当前文档，`eda.sch_PrimitiveComponent.getAll()` 读取原理图器件（位号/Value/封装），`eda.pcb_PrimitiveComponent.getAll()` 读取 PCB 元件（位号/封装），检查器在面板内完成比对与归一化，点击问题行通过 `doSelectPrimitives()` + `zoomToSelectedPrimitives()` 实现跳转定位。
