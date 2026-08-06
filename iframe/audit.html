@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+	<title>设计一致性审查</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<style>
+		:root {
+			--bg: #f5f6f8;
+			--card: #ffffff;
+			--border: #e2e5ea;
+			--text: #1f2329;
+			--muted: #6b7280;
+			--accent: #2b6cb0;
+			--accent-hover: #245a94;
+			--err: #c53030;
+			--warn: #b7791f;
+			--info: #2b6cb0;
+			--ok: #2f855a;
+		}
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+		body {
+			font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+			font-size: 13px;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+		}
+		header {
+			background: var(--card);
+			border-bottom: 1px solid var(--border);
+			padding: 10px 16px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-wrap: wrap;
+		}
+		header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
+		.status { color: var(--muted); font-size: 12px; flex: 1; min-width: 180px; }
+		.status b { color: var(--text); }
+		.btn {
+			border: 1px solid var(--border);
+			background: var(--card);
+			color: var(--text);
+			border-radius: 6px;
+			padding: 6px 14px;
+			font-size: 13px;
+			cursor: pointer;
+			white-space: nowrap;
+		}
+		.btn:hover { background: #f0f2f5; }
+		.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+		.btn.primary:hover { background: var(--accent-hover); }
+		.btn:disabled { opacity: .5; cursor: not-allowed; }
+		.summary {
+			display: flex;
+			gap: 10px;
+			padding: 10px 16px;
+			background: var(--card);
+			border-bottom: 1px solid var(--border);
+		}
+		.sum-item {
+			flex: 1;
+			text-align: center;
+			border-radius: 8px;
+			padding: 8px 6px;
+			background: var(--bg);
+		}
+		.sum-item .num { font-size: 20px; font-weight: 700; line-height: 1.2; }
+		.sum-item .lbl { font-size: 11px; color: var(--muted); }
+		.sum-item.error .num { color: var(--err); }
+		.sum-item.warn .num { color: var(--warn); }
+		.sum-item.info .num { color: var(--info); }
+		.sum-item.ok .num { color: var(--ok); }
+		main { flex: 1; overflow-y: auto; padding: 12px 16px; }
+		.group { margin-bottom: 14px; }
+		.group-title {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-weight: 600;
+			font-size: 13px;
+			padding: 6px 0;
+		}
+		.badge {
+			display: inline-block;
+			min-width: 44px;
+			text-align: center;
+			border-radius: 4px;
+			padding: 1px 6px;
+			font-size: 11px;
+			color: #fff;
+		}
+		.badge.error { background: var(--err); }
+		.badge.warn { background: var(--warn); }
+		.badge.info { background: var(--info); }
+		.item {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 8px 10px;
+			margin-bottom: 6px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			cursor: pointer;
+			transition: border-color .15s, box-shadow .15s;
+		}
+		.item:hover { border-color: var(--accent); box-shadow: 0 1px 4px rgba(43,108,176,.15); }
+		.item .designator { font-family: "Cascadia Mono", Consolas, monospace; font-weight: 600; min-width: 64px; }
+		.item .msg { flex: 1; }
+		.item .cat { color: var(--muted); font-size: 11px; white-space: nowrap; }
+		.empty {
+			text-align: center;
+			color: var(--muted);
+			padding: 40px 20px;
+		}
+		.empty .big { font-size: 28px; margin-bottom: 8px; }
+		.hint { color: var(--muted); font-size: 12px; padding: 4px 0 12px; }
+		footer {
+			background: var(--card);
+			border-top: 1px solid var(--border);
+			padding: 8px 16px;
+			display: flex;
+			gap: 8px;
+			align-items: center;
+		}
+		footer .hint { padding: 0; flex: 1; }
+		.spinner {
+			display: inline-block;
+			width: 14px;
+			height: 14px;
+			border: 2px solid var(--border);
+			border-top-color: var(--accent);
+			border-radius: 50%;
+			animation: spin .8s linear infinite;
+			vertical-align: -2px;
+		}
+		@keyframes spin { to { transform: rotate(360deg); } }
+	</style>
+</head>
+<body>
+	<header>
+		<h1>设计一致性审查</h1>
+		<span class="status" id="status"></span>
+		<button class="btn primary" id="runBtn"></button>
+	</header>
+	<div class="summary" id="summary" style="display:none">
+		<div class="sum-item error"><div class="num" id="cntError">0</div><div class="lbl" id="lblError"></div></div>
+		<div class="sum-item warn"><div class="num" id="cntWarn">0</div><div class="lbl" id="lblWarn"></div></div>
+		<div class="sum-item info"><div class="num" id="cntInfo">0</div><div class="lbl" id="lblInfo"></div></div>
+		<div class="sum-item ok"><div class="num" id="cntOk">0</div><div class="lbl" id="lblOk"></div></div>
+	</div>
+	<main id="main"></main>
+	<footer>
+		<button class="btn" id="exportCsvBtn" disabled></button>
+		<button class="btn" id="copyBtn" disabled></button>
+		<span class="hint" id="footHint"></span>
+	</footer>
+
+	<script>
+		'use strict';
+		/* ============ 多语言（iframe 内自带字典，不依赖扩展 i18n 注册） ============ */
+		const lang = (() => { try { return (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en'; } catch (e) { return 'en'; } })();
+		let langEda = null; // EDA 显示语言（异步获取后覆盖）
+		const currentLang = () => (langEda || lang);
+		const I18N = {
+			zh: {
+				run: '开始检查', running: '检查中…', refresh: '刷新',
+				statusDefault: '当前未检测到打开的文档', statusSch: '原理图', statusPcb: 'PCB',
+				statusSchPcb: '原理图 + PCB', statusOnly: '（仅当前文档，另一侧未打开）',
+				noDoc: '请先在编辑器中打开一个原理图或 PCB 文档，再点击「开始检查」。',
+				empty: '未发现任何问题，设计状态良好！',
+				emptyPartial: '当前文档未发现问题（另一侧未打开，交叉检查已跳过）。',
+				loading: '正在读取文档数据…',
+				error: '检查失败：', errNoEda: '无法访问 eda 对象（请确认在嘉立创 EDA 专业版扩展环境中运行）',
+				lblError: '严重', lblWarn: '警告', lblInfo: '提示', lblOk: '通过',
+				catDup: '位号重复', catFpMissing: '封装缺失', catValueMissing: '器件值缺失',
+				catFpMismatch: '封装不一致', catMissing: '位号缺失',
+				msgDup: '位号 {0} 出现 {1} 次（{2}）',
+				msgFpMissingSch: '原理图器件缺少封装（Footprint）声明',
+				msgFpMissingPcb: 'PCB 元件缺少封装信息',
+				msgValueMissing: '缺少器件值（Value），BOM 中将显示为空',
+				msgFpMismatch: '原理图声明封装「{0}」与 PCB 实际封装「{1}」不一致',
+				msgMissingInPcb: '原理图中有位号 {0}，但 PCB 上未找到对应元件',
+				msgMissingInSch: 'PCB 上有位号 {0}，但原理图中未找到（可能为机械件/测试点）',
+				exportCsv: '导出 CSV', copy: '复制报告', copied: '报告已复制',
+				footHint: '点击问题行可跳转定位到对应器件；未打开另一侧文档时自动跳过交叉检查。',
+				docInfo: '当前文档：{0}',
+			},
+			en: {
+				run: 'Run Check', running: 'Checking…', refresh: 'Refresh',
+				statusDefault: 'No document detected', statusSch: 'Schematic', statusPcb: 'PCB',
+				statusSchPcb: 'Schematic + PCB', statusOnly: '（current document only, other side not open）',
+				noDoc: 'Open a schematic or PCB document in the editor, then click "Run Check".',
+				empty: 'No issues found. The design looks good!',
+				emptyPartial: 'No issues in current document (other side not open, cross checks skipped).',
+				loading: 'Reading document data…',
+				error: 'Check failed: ', errNoEda: 'Cannot access eda object (run inside JLCEDA Pro extension environment)',
+				lblError: 'Error', lblWarn: 'Warning', lblInfo: 'Info', lblOk: 'Pass',
+				catDup: 'Duplicate designator', catFpMissing: 'Missing footprint', catValueMissing: 'Missing value',
+				catFpMismatch: 'Footprint mismatch', catMissing: 'Designator missing',
+				msgDup: 'Designator {0} appears {1} times ({2})',
+				msgFpMissingSch: 'Schematic component has no footprint declared',
+				msgFpMissingPcb: 'PCB component has no footprint info',
+				msgValueMissing: 'Missing value; BOM will show empty',
+				msgFpMismatch: 'Schematic footprint "{0}" differs from PCB footprint "{1}"',
+				msgMissingInPcb: 'Designator {0} exists in schematic but not found on PCB',
+				msgMissingInSch: 'Designator {0} exists on PCB but not in schematic (mechanical part / test point?)',
+				exportCsv: 'Export CSV', copy: 'Copy report', copied: 'Report copied',
+				footHint: 'Click an issue row to jump to the component. Cross checks are skipped when the other document is not open.',
+				docInfo: 'Current document: {0}',
+			},
+		};
+		const t = (key) => (I18N[currentLang()][key] ?? I18N.en[key] ?? key);
+		const fmt = (key, ...args) => t(key).replace(/\{(\d+)\}/g, (_, i) => args[+i] ?? '');
+
+		/* ============ 状态 ============ */
+		const $ = (id) => document.getElementById(id);
+		const state = { issues: [], schComps: null, pcbComps: null, currentType: null };
+
+		/* ============ 文档读取 ============ */
+		async function loadSchematicComponents() {
+			try {
+				const list = await eda.sch_PrimitiveComponent.getAll(undefined, true);
+				return (list || []).map((c) => ({
+					primitiveId: c.getState_PrimitiveId(),
+					designator: (c.getState_Designator() || '').trim(),
+					name: (c.getState_Name() || '').trim(),
+					footprint: (c.getState_Footprint() && c.getState_Footprint().name || '').trim(),
+					x: c.getState_X(), y: c.getState_Y(),
+					side: 'sch',
+				})).filter((c) => c.designator);
+			} catch (e) { return null; }
+		}
+		async function loadPcbComponents() {
+			try {
+				const list = await eda.pcb_PrimitiveComponent.getAll();
+				return (list || []).map((c) => ({
+					primitiveId: c.getState_PrimitiveId(),
+					designator: (c.getState_Designator() || '').trim(),
+					name: (c.getState_Name() || '').trim(),
+					footprint: (c.getState_Footprint() && c.getState_Footprint().name || '').trim(),
+					x: c.getState_X(), y: c.getState_Y(),
+					side: 'pcb',
+				})).filter((c) => c.designator);
+			} catch (e) { return null; }
+		}
+
+		/* ============ 检查器 ============ */
+		function checkDesignatorDuplicates(comps, side, issues) {
+			const seen = new Map();
+			for (const c of comps) {
+				if (!seen.has(c.designator)) seen.set(c.designator, []);
+				seen.get(c.designator).push(c);
+			}
+			for (const [designator, list] of seen) {
+				if (list.length > 1) {
+					const ids = list.map((c) => c.primitiveId).join(',');
+					issues.push({
+						severity: 'error',
+						category: t('catDup'),
+						designator,
+						message: fmt('msgDup', designator, list.length, ids),
+						side,
+						primitiveId: list[0].primitiveId,
+						x: list[0].x, y: list[0].y,
+					});
+				}
+			}
+		}
+		function checkFootprintMissing(comps, side, issues) {
+			for (const c of comps) {
+				if (!c.footprint) {
+					issues.push({
+						severity: 'warn',
+						category: t('catFpMissing'),
+						designator: c.designator,
+						message: side === 'sch' ? t('msgFpMissingSch') : t('msgFpMissingPcb'),
+						side,
+						primitiveId: c.primitiveId,
+						x: c.x, y: c.y,
+					});
+				}
+			}
+		}
+		function checkValueMissing(comps, issues) {
+			for (const c of comps) {
+				if (!c.name) {
+					issues.push({
+						severity: 'info',
+						category: t('catValueMissing'),
+						designator: c.designator,
+						message: t('msgValueMissing'),
+						side: c.side,
+						primitiveId: c.primitiveId,
+						x: c.x, y: c.y,
+					});
+				}
+			}
+		}
+		function checkFootprintMismatch(schComps, pcbComps, issues) {
+			const pcbByDesignator = new Map();
+			for (const c of pcbComps) {
+				if (!pcbByDesignator.has(c.designator)) pcbByDesignator.set(c.designator, c);
+			}
+			for (const s of schComps) {
+				const p = pcbByDesignator.get(s.designator);
+				if (p && s.footprint && p.footprint && s.footprint !== p.footprint) {
+					issues.push({
+						severity: 'error',
+						category: t('catFpMismatch'),
+						designator: s.designator,
+						message: fmt('msgFpMismatch', s.footprint, p.footprint),
+						side: 'pcb',
+						primitiveId: p.primitiveId,
+						x: p.x, y: p.y,
+					});
+				}
+			}
+		}
+		function checkDesignatorPresence(schComps, pcbComps, issues) {
+			const pcbSet = new Set(pcbComps.map((c) => c.designator));
+			const schSet = new Set(schComps.map((c) => c.designator));
+			for (const s of schComps) {
+				if (!pcbSet.has(s.designator)) {
+					issues.push({
+						severity: 'info',
+						category: t('catMissing'),
+						designator: s.designator,
+						message: fmt('msgMissingInPcb', s.designator),
+						side: 'sch',
+						primitiveId: s.primitiveId,
+						x: s.x, y: s.y,
+					});
+				}
+			}
+			for (const p of pcbComps) {
+				if (!schSet.has(p.designator)) {
+					issues.push({
+						severity: 'info',
+						category: t('catMissing'),
+						designator: p.designator,
+						message: fmt('msgMissingInSch', p.designator),
+						side: 'pcb',
+						primitiveId: p.primitiveId,
+						x: p.x, y: p.y,
+					});
+				}
+			}
+		}
+
+		/* ============ 运行检查 ============ */
+		async function run() {
+			const btn = $('runBtn');
+			btn.disabled = true;
+			$('summary').style.display = 'none';
+			$('main').innerHTML = `<div class="empty"><div class="spinner"></div><p>${t('loading')}</p></div>`;
+			state.issues = [];
+			try {
+				// 当前文档类型
+				let info = null;
+				try { info = await eda.dmt_SelectControl.getCurrentDocumentInfo(); } catch (e) { /* ignore */ }
+				if (!info || !info.uuid) {
+					$('main').innerHTML = `<div class="empty"><div class="big">📄</div><p>${t('noDoc')}</p></div>`;
+					btn.disabled = false;
+					return;
+				}
+				state.currentType = info.documentType;
+				const typeNum = Number(info.documentType);
+				const isSch = typeNum === 1; // EDMT_EditorDocumentType.SCHEMATIC_PAGE
+				const isPcb = typeNum === 3; // EDMT_EditorDocumentType.PCB
+				if (!isSch && !isPcb) {
+					$('main').innerHTML = `<div class="empty"><div class="big">📄</div><p>${t('noDoc')}</p></div>`;
+					btn.disabled = false;
+					return;
+				}
+
+				// 读取两侧数据：当前侧优先，另一侧尝试（可能未打开）
+				const [sch, pcb] = await Promise.all([loadSchematicComponents(), loadPcbComponents()]);
+				state.schComps = sch;
+				state.pcbComps = pcb;
+				const hasSch = sch !== null;
+				const hasPcb = pcb !== null;
+
+				// 检查器
+				if (hasSch && sch.length) {
+					checkDesignatorDuplicates(sch, 'sch', state.issues);
+					checkFootprintMissing(sch, 'sch', state.issues);
+					checkValueMissing(sch, state.issues);
+				}
+				if (hasPcb && pcb.length) {
+					checkDesignatorDuplicates(pcb, 'pcb', state.issues);
+					checkFootprintMissing(pcb, 'pcb', state.issues);
+				}
+				if (hasSch && sch.length && hasPcb && pcb.length) {
+					checkFootprintMismatch(sch, pcb, state.issues);
+					checkDesignatorPresence(sch, pcb, state.issues);
+				}
+				render();
+			} catch (e) {
+				console.error('[Design Audit]', e);
+				$('main').innerHTML = `<div class="empty"><div class="big">⚠️</div><p>${t('error')}${String(e && e.message || e)}</p></div>`;
+			} finally {
+				btn.disabled = false;
+			}
+		}
+
+		/* ============ 渲染 ============ */
+		function render() {
+			const err = state.issues.filter((i) => i.severity === 'error');
+			const warn = state.issues.filter((i) => i.severity === 'warn');
+			const info = state.issues.filter((i) => i.severity === 'info');
+			$('cntError').textContent = err.length;
+			$('cntWarn').textContent = warn.length;
+			$('cntInfo').textContent = info.length;
+			$('cntOk').textContent = state.issues.length ? '—' : '✓';
+			$('summary').style.display = 'flex';
+
+			state.issues.forEach((it, i) => { it._idx = i; });
+			const crossDone = state.schComps && state.pcbComps && state.schComps.length && state.pcbComps.length;
+			const main = $('main');
+			if (!state.issues.length) {
+				main.innerHTML = `<div class="empty"><div class="big">✅</div><p>${crossDone ? t('empty') : t('emptyPartial')}</p></div>`;
+				$('exportCsvBtn').disabled = true;
+				$('copyBtn').disabled = true;
+				return;
+			}
+			let html = '';
+			const groups = [
+				['error', err], ['warn', warn], ['info', info],
+			];
+			for (const [sev, list] of groups) {
+				if (!list.length) continue;
+				html += `<div class="group"><div class="group-title"><span class="badge ${sev}">${t('lbl' + (sev[0].toUpperCase() + sev.slice(1)))}</span><span>${list.length}</span></div>`;
+				for (const it of list) {
+					html += `<div class="item" data-idx="${it._idx}">`
+						+ `<span class="designator">${esc(it.designator)}</span>`
+						+ `<span class="msg">${esc(it.message)}</span>`
+						+ `<span class="cat">${esc(it.category)} · ${it.side.toUpperCase()}</span>`
+						+ `</div>`;
+				}
+				html += '</div>';
+			}
+			main.innerHTML = html;
+			main.querySelectorAll('.item').forEach((el) => {
+				el.addEventListener('click', () => jump(state.issues[+el.dataset.idx]));
+			});
+			$('exportCsvBtn').disabled = false;
+			$('copyBtn').disabled = false;
+		}
+		function esc(s) {
+			return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+		}
+
+		/* ============ 跳转定位 ============ */
+		async function jump(issue) {
+			if (!issue) return;
+			try {
+				if (issue.primitiveId) {
+					if (issue.side === 'sch') await eda.sch_SelectControl.doSelectPrimitives(issue.primitiveId);
+					else await eda.pcb_SelectControl.doSelectPrimitives(issue.primitiveId);
+					await eda.dmt_EditorControl.zoomToSelectedPrimitives();
+				}
+			} catch (e) {
+				console.error('[Design Audit] jump failed', e);
+			}
+		}
+
+		/* ============ 导出 ============ */
+		function buildReport() {
+			return state.issues.map((i) => ({
+				severity: i.severity, category: i.category, designator: i.designator,
+				side: i.side, message: i.message,
+			}));
+		}
+		function download(filename, content, mime) {
+			try {
+				const blob = new Blob([content], { type: mime });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = filename;
+				document.body.appendChild(a);
+				a.click();
+				setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+			} catch (e) { console.error('[Design Audit] download failed', e); }
+		}
+		function csvEscape(s) { return '"' + String(s).replace(/"/g, '""') + '"'; }
+
+		/* ============ 事件绑定 ============ */
+		$('runBtn').addEventListener('click', run);
+		$('exportCsvBtn').addEventListener('click', () => {
+			const header = ['severity', 'category', 'designator', 'side', 'message'];
+			const rows = buildReport().map((r) => header.map((k) => csvEscape(r[k])).join(','));
+			download('design-audit-report.csv', [header.join(','), ...rows].join('\n'), 'text/csv;charset=utf-8');
+		});
+		$('copyBtn').addEventListener('click', async () => {
+			const text = JSON.stringify(buildReport(), null, 2);
+			try {
+				await navigator.clipboard.writeText(text);
+				const old = $('copyBtn').textContent;
+				$('copyBtn').textContent = t('copied');
+				setTimeout(() => { $('copyBtn').textContent = old; }, 1200);
+			} catch (e) { console.error(e); }
+		});
+
+		/* ============ 初始化 ============ */
+		(function init() {
+			if (typeof eda === 'undefined') {
+				$('status').textContent = t('errNoEda');
+				$('main').innerHTML = `<div class="empty"><div class="big">⚠️</div><p>${t('errNoEda')}</p></div>`;
+				$('runBtn').disabled = true;
+				return;
+			}
+			(async () => {
+				// 优先跟随 EDA 显示语言，其次浏览器语言
+				try {
+					if (eda.sys_I18n && eda.sys_I18n.getCurrentLanguage) {
+						const l = await eda.sys_I18n.getCurrentLanguage();
+						if (l) langEda = String(l).toLowerCase().startsWith('zh') ? 'zh' : 'en';
+					}
+				} catch (e) { /* fallback 浏览器语言 */ }
+				setupUi();
+			})();
+		})();
+		function setupUi() {
+			$('runBtn').textContent = t('run');
+			$('lblError').textContent = t('lblError');
+			$('lblWarn').textContent = t('lblWarn');
+			$('lblInfo').textContent = t('lblInfo');
+			$('lblOk').textContent = t('lblOk');
+			$('exportCsvBtn').textContent = t('exportCsv');
+			$('copyBtn').textContent = t('copy');
+			$('footHint').textContent = t('footHint');
+			(async () => {
+				try {
+					const info = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+					if (info && info.uuid) {
+						const typeNum = Number(info.documentType);
+						const isSch = typeNum === 1; // EDMT_EditorDocumentType.SCHEMATIC_PAGE
+						const isPcb = typeNum === 3; // EDMT_EditorDocumentType.PCB
+						const label = isSch ? t('statusSch') : isPcb ? t('statusPcb') : t('statusDefault');
+						$('status').innerHTML = fmt('docInfo', `<b>${esc(label)}</b>`);
+					} else {
+						$('status').textContent = t('statusDefault');
+					}
+				} catch (e) { $('status').textContent = t('statusDefault'); }
+			})();
+			$('main').innerHTML = `<div class="empty"><div class="big">🔍</div><p>${t('noDoc')}</p></div>`;
+		}
+	</script>
+</body>
+</html>

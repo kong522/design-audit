@@ -16,3 +16,11 @@
 /tsconfig.json
 .eslintcache
 debug.log
+/README.en.md
+/README.ja.md
+/README.zh-Hant.md
+/README.ru.md
+/iframe/index.html
+/tests/
+/logo.png
+/test.png

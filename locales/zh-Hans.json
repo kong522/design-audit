@@ -1,4 +1,5 @@
 {
-	"About": "关于",
-	"EasyEDA extension SDK v": "嘉立创EDA 扩展 SDK v${1}"
+	"panel.open.failed": "无法打开 Design Audit 面板，请重试",
+	"about.title": "关于设计一致性审查",
+	"about.description": "Design Audit / 设计一致性审查 v${1}\n\n一键检查原理图、PCB 与 BOM 的一致性（位号、封装、器件值），输出分级问题清单并支持点击跳转定位。\n\n开源协议：Apache-2.0"
 }

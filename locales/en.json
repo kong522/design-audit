@@ -1,4 +1,5 @@
 {
-	"About": "About",
-	"EasyEDA extension SDK v": "EasyEDA extension SDK v${1}"
+	"panel.open.failed": "Failed to open the Design Audit panel, please retry",
+	"about.title": "About Design Audit",
+	"about.description": "Design Audit v${1}\n\nOne-click consistency check of schematic, PCB and BOM (designators, footprints, values), with severity-grouped issue list and click-to-jump locating.\n\nLicense: Apache-2.0"
 }

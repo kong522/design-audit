@@ -22,7 +22,8 @@
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"isolatedModules": true
+		"isolatedModules": true,
+		"skipLibCheck": true
 	},
 	"include": ["./src/**/*", "./node_modules/@jlceda/pro-api-types/**/*"]
 }

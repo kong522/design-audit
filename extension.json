@@ -1,26 +1,34 @@
 {
-	"name": "your-extension-name",
-	"uuid": "",
-	"displayName": "填写你的扩展名称 / Your Extension Name",
-	"description": "",
+	"name": "design-audit",
+	"uuid": "1a01dafb238d4bbc894a48010380b421",
+	"displayName": "设计一致性审查",
+	"description": "一键检查原理图、PCB 与 BOM 的一致性（位号、封装、器件属性），输出分级问题清单并支持点击跳转定位，帮助工程师在交付/评审/打样前快速发现设计隐患。",
 	"version": "1.0.0",
-	"publisher": "",
+	"publisher": "kong522",
 	"engines": {
 		"eda": "^3.2.0"
 	},
 	"license": "Apache-2.0",
 	"repository": {
-		"type": "extension-store",
-		"url": ""
+		"type": "github",
+		"url": "https://github.com/kong522/design-audit"
 	},
-	"categories": "Other",
+	"categories": [
+		"Schematic",
+		"PCB"
+	],
 	"keywords": [
-		"Tool"
+		"Design",
+		"Audit",
+		"Check",
+		"BOM",
+		"审查",
+		"检查"
 	],
 	"images": {
 		"logo": "./images/logo.png"
 	},
-	"homepage": "",
+	"homepage": "https://github.com/kong522/design-audit",
 	"bugs": "",
 	"activationEvents": {},
 	"entry": "./dist/index",
@@ -28,12 +36,17 @@
 	"headerMenus": {
 		"home": [
 			{
-				"id": "menuId1",
-				"title": "Ext Menu",
+				"id": "design-audit",
+				"title": "设计一致性审查",
 				"menuItems": [
 					{
-						"id": "About",
-						"title": "About...",
+						"id": "open-audit",
+						"title": "开始审查...",
+						"registerFn": "openAuditPanel"
+					},
+					{
+						"id": "about-audit",
+						"title": "关于...",
 						"registerFn": "about"
 					}
 				]
@@ -41,26 +54,26 @@
 		],
 		"sch": [
 			{
-				"id": "menuId2",
-				"title": "Ext Menu",
+				"id": "design-audit",
+				"title": "设计一致性审查",
 				"menuItems": [
 					{
-						"id": "About",
-						"title": "About...",
-						"registerFn": "about"
+						"id": "open-audit",
+						"title": "开始审查...",
+						"registerFn": "openAuditPanel"
 					}
 				]
 			}
 		],
 		"pcb": [
 			{
-				"id": "menuId3",
-				"title": "Ext Menu",
+				"id": "design-audit",
+				"title": "设计一致性审查",
 				"menuItems": [
 					{
-						"id": "About",
-						"title": "About...",
-						"registerFn": "about"
+						"id": "open-audit",
+						"title": "开始审查...",
+						"registerFn": "openAuditPanel"
 					}
 				]
 			}
