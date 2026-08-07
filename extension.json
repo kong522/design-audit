@@ -1,0 +1,69 @@
+{
+	"name": "your-extension-name",
+	"uuid": "",
+	"displayName": "填写你的扩展名称 / Your Extension Name",
+	"description": "",
+	"version": "1.0.0",
+	"publisher": "",
+	"engines": {
+		"eda": "^3.2.0"
+	},
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "extension-store",
+		"url": ""
+	},
+	"categories": "Other",
+	"keywords": [
+		"Tool"
+	],
+	"images": {
+		"logo": "./images/logo.png"
+	},
+	"homepage": "",
+	"bugs": "",
+	"activationEvents": {},
+	"entry": "./dist/index",
+	"dependentExtensions": {},
+	"headerMenus": {
+		"home": [
+			{
+				"id": "menuId1",
+				"title": "Ext Menu",
+				"menuItems": [
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"sch": [
+			{
+				"id": "menuId2",
+				"title": "Ext Menu",
+				"menuItems": [
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"pcb": [
+			{
+				"id": "menuId3",
+				"title": "Ext Menu",
+				"menuItems": [
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		]
+	}
+}
